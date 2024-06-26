@@ -1,28 +1,33 @@
-Rare Event Early Prediction: Sepsis Onset for Critically Ill Trauma Patients
-==============================
+# Rare Event Early Prediction: Sepsis Onset for Critically Ill Trauma Patients
 
-## Overview
+### Overview
 This repository contains the code for generating a dataset to predict the early onset of hospital-acquired sepsis among critically ill patients within a trauma cohort from the MIMIC III dataset.
 
 The implementation is purely in Python, based on the methodology described in [TODO: link] paper. We utilize the Google BigQuery server to access and manage the MIMIC III database.
 
-## Dataset
+### Dataset
 We introduce a publicly available, arguably reliable dataset derived from the MIMIC-III database. This dataset encompasses a well-defined trauma cohort with corresponding sepsis labels with concrete time stamps, specifically targeting the task of early hospital-acquired sepsis onset prediction among critically ill patients with trauma. We offer comprehensive data analysis and medical context for both the cohort and the sepsis labels, along with well-formed time-series vital sign features according to a deployable setup for ICUs.
 
+---
 
-Usage
-==============================
+# Usage
 
 The project includes several scripts to perform different tasks:
 
-## Cohort Extraction: Critically Ill Trauma Patients
+### Check MIMIC Dataset Access
+Verify access to the MIMIC III dataset through Google BigQuery:
+```
+python tests/test_mimic_access.py 
+```
+
+### Cohort Extraction: Critically Ill Trauma Patients
 Extract the Critically Ill Trauma Patients cohort from the MIMIC III dataset:
 ```
 python scripts/cohort_extraction.py 
 
 ```
 
-## Assign Post-trauma Sepsis Labels
+### Assign Post-trauma Sepsis Labels
 Assign Post-trauma Sepsis labels to the trauma cohort based on the defined criteria:
 ```
 python scripts/assign_sepsis_label.py
@@ -30,14 +35,14 @@ python scripts/assign_sepsis_label.py
 ```
 
 
-## Generate Dataset
+### Generate Dataset
 Generate a dataset according to the Early Sepsis Onset Prediction Setup:
 ```
 python scripts/generate_dataset.py
 
 ```
 
-## Benchmarks
+### Benchmarks
 Run benchmark training and testing:
 ```
 python scripts/benchmarks.py
@@ -45,10 +50,9 @@ python scripts/benchmarks.py
 ```
 
 
+---
+# Project Organization
 
-
-## Project Organization
-------------
     ├── data/              <- Data saved in this directory.
     │   ├── raw/           <- Contains raw data extracted from the MIMIC dataset.
     │   ├── processed/     <- Contains processed data organized as reusable modules for final dataset generation and other future tasks.
@@ -94,10 +98,10 @@ python scripts/benchmarks.py
     ├── tests/             <- Test scripts.
     │   ├── test_data_loading.py <- [Test MIMIC III Data access].
     │   └── other_test.py
---------
 
+---
 
-## Acknowledgements
+# Acknowledgements
 
 [] TODO
 
