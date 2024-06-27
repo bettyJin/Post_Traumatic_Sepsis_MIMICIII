@@ -76,17 +76,24 @@ python scripts/benchmarks.py
     │   └── benchmarks.py              <- Benchmarks: initialize model; training; evaluation.
     │           
     ├── setup.py           <- [TODO: file config?] Makes project pip installable (pip install -e .) so src can be imported.
-    └──── src/               <- [TODO] Source code for use in this project. [Reusable modules, libraries, and functions that are essential for the project's operations.]
+    ├── src/               <- [TODO] Source code for use in this project. [Reusable modules, libraries, and functions that are essential for the project's operations.]
         ├── __init__.py    <- [TODO?] Makes src a Python module. [?? Not sure what should be included yet.]
         │
         ├── data           <- [TODO] Scripts to extract and preprocess raw data from MIMIC III.
         │
         ├── features       <- [TODO] Scripts to generate time-series data according to the Early Sepsis Onset Prediction Setup (including preprocessing, filling missing values, splitting, etc.) [this folder may merge with data folder].
         │
-        └── models         <- [TODO] Scripts to train models and then use trained models to make predictions.
+        └── models/         <- [TODO] Scripts to train models and then use trained models to make predictions.
             │                 
             ├── predict_model.py    <- [Draft: will be improved later].
             └── train_model.py      <- [Draft: will be improved later].
+    └── supplementary/
+        ├── ICD_Nonpoisoning_Cause_Matrix.xlsx <- qualifying ICD-9 E codes for the trauma cohort
+
+
+
+
+
 
 
     ## The following folders are in the template, but I am not sure what to include. I will add them as TODO for now.
