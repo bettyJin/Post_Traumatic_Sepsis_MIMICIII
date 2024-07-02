@@ -9,22 +9,21 @@ from .data_utils import run_query
 
 
 ####################### Demographics ##################################################################
-# ------------------------------------------------------------------
-# Description: This query provides a useful set of information regarding patient ICU stays. 
-#              The information is combined from the admissions, patients, and icustays tables. 
-#              It includes age, length of stay, sequence, and expiry flags, etc.
+# Description: This query provides a useful set of information regarding patient
+#              ICU stays. The information is combined from the admissions, patients, and icustays tables. It includes age, length of stay, sequence, and expiry flags.
 # MIMIC version: MIMIC-III v1.4
-# A modify veristion of: https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/demographics/icustay_detail.sql
-# modified list:
-#   1. duration result is expressed in hours & in days
+# A modified version of: https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/demographics/icustay_detail.sql
+# Modifications include:
+#   1. Duration result is expressed in hours instead of in days
 # ------------------------------------------------------------------
-# this table includes:
+# This table includes:
 # *   Patient Info:
-#  >  'subject_id', 'gender', 'dod', 'ethnicity','ethnicity_grouped',
-# *   Hosipital Admission Info:
-#  >  'hadm_id', 'admittime', 'dischtime', 'los_hospital_hours', 'admission_age' 'hospital_expire_flag'(0/1), 'hospstay_seq', 'first_hosp_stay'(T/F)
+#  >  'subject_id', 'gender', 'dod', 'ethnicity', 'ethnicity_grouped'
+# *   Hospital Admission Info:
+#  >  'hadm_id', 'admittime', 'dischtime', 'los_hospital_hours', 'admission_age', 'hospital_expire_flag' (0/1), 'hospstay_seq', 'first_hosp_stay' (T/F)
 # * ICUstay Info:
-#  > 'icustay_id', 'intime', 'outtime', 'los_icu_hours', 'icustay_seq', 'first_icu_stay'(T/F)
+#  > 'icustay_id', 'intime', 'outtime', 'los_icu_hours', 'icustay_seq', 'first_icu_stay' (T/F)
+########################################################################################################
 
 def demog_sql2df(project_id, saved_path=None):
   demog_query = """
@@ -127,16 +126,18 @@ def demog_sql2df(project_id, saved_path=None):
 
 def ventilation_day_processed(project_id, vent_type=['MechVent'], saved_path=None):
   '''
-  Identify the presence of a mechanical ventilation
-      - Based on sorece file: [ventilation_classification.sql](https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/durations/ventilation_classification.sql)
-  and
-  Compute the num of day the patient(HADM_ID) was receiving ventilation event,
-      - regardless of how many hours in that day the patient received ventilation
-  parameters:
-    project_id: BigQuery Mimic III Project id
-    vent_type:  a sebset of 4 ventalation type ['MechVent','OxygenTherapy','Extubated','SelfExtubated']. 
-                This function only counts the ventilation types within this subset.
-                By default, only 'MechVent' will be considered a qualifying ventilation event. 
+  Identify the presence of mechanical ventilation
+  - Based on source file: [ventilation_classification.sql](https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/durations/ventilation_classification.sql)
+
+  Compute the number of days the patient (HADM_ID) was receiving ventilation events
+  - Regardless of how many hours in that day the patient received ventilation
+
+  Parameters:
+    project_id: BigQuery MIMIC-III Project ID
+    vent_type: A subset of 4 ventilation types ['MechVent', 'OxygenTherapy', 'Extubated', 'SelfExtubated']. 
+              This function only counts the ventilation types within this subset.
+              By default, only 'MechVent' will be considered a qualifying ventilation event.
+    saved_path: (Optional) path to save the resulting CSV file.
   '''
   # Identify the presence of a mechanical ventilation using settings
   vent_df = run_query(
@@ -147,14 +148,14 @@ def ventilation_day_processed(project_id, vent_type=['MechVent'], saved_path=Non
       ON v.ICUSTAY_ID = i.ICUSTAY_ID;
       """, project_id)
 
-  # Select qualified ventalation event according to vent_type
+  # Select qualified ventilation event according to vent_type
   vent_df['sum'] = vent_df[vent_type].sum(axis=1)
   qualified_vent_df = vent_df[vent_df['sum']>0]
   numevent = qualified_vent_df.shape[0]
   # Get date
   qualified_vent_df['date_count'] = pd.to_datetime(qualified_vent_df['charttime']).dt.date
   vent_day_df = qualified_vent_df[['hadm_id', 'date_count']].drop_duplicates()
-  # Count ventilation days: if a pacient get ventilation (regaless of specific hours), then +1
+  # Count ventilation days: if a patient get ventilation (regaless of specific hours), then +1
   vent_day_count = vent_day_df.groupby('hadm_id').date_count.count().reset_index()
   if saved_path is not None:
     print("Saved mechanical ventilation day at",  saved_path)
