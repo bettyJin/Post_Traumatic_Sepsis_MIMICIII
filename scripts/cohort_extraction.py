@@ -85,8 +85,7 @@ Cohort Extraction: Critically Ill Trauma Patients
 """
 def extract_trauma_cohort_ids(project_path_obj, #Saved File Paths
                project_id,       #Source File
-               vent_threshold=3,
-               is_report=False):
+               vent_threshold=3, is_report=False, is_saved=False):
   """
   Cohort Selection Criteria:
     1. Get qualified HADM_ID (with corresponding CHARTEVENTS data and at least 1 ICUStay_ID.)    
@@ -106,7 +105,9 @@ def extract_trauma_cohort_ids(project_path_obj, #Saved File Paths
   """
   # Get qualified patients' demographics: (with corresponding CHARTEVENTS data and at least 1 ICUStay_ID) 
   demog_df = get_demographics_data(project_path_obj, project_id)
-  demog_df = demog_df[['subject_id', 'hadm_id', 'icustay_id','admission_age', 'los_hospital_hours', 'los_hospital_days', 'hospital_expire_flag']]
+  demog_df = demog_df[['subject_id', 'hadm_id', 'icustay_id',
+                       'admission_age', 'admittime', 'dischtime',
+                       'los_hospital_hours', 'los_hospital_days', 'hospital_expire_flag']]
   count_df = demog_df[['subject_id', 'hadm_id', 'icustay_id']].nunique().to_frame(name='TOTAL')
 
   # Selected according to E-codes
@@ -137,17 +138,25 @@ def extract_trauma_cohort_ids(project_path_obj, #Saved File Paths
   # Statistics ###
   if is_report:
     display(count_df)
-    print("MIMIC III includes %d qualified hospital admission"%demog_df.hadm_id.nunique())
-    print("After Truama selection (ICD-9): ", TRUM_df.hadm_id.nunique())
-    print("After Age Filter: ", TRUM_df_age.hadm_id.nunique())
-    TRUM_df_firstfewday = TRUM_df_age.loc[TRUM_df_age.los_hospital_hours<48, ['hadm_id', 'hospital_expire_flag']].drop_duplicates()
+    print("MIMIC III includes: %d (qualified hospital admissions)" % demog_df.hadm_id.nunique())
+    print("After Trauma Selection (ICD-9): %d" % TRUM_df.hadm_id.nunique())
+    print("After Age Filter: %d" % TRUM_df_age.hadm_id.nunique())
+
+    TRUM_df_firstfewday = TRUM_df_age.loc[TRUM_df_age.los_hospital_hours < 48, ['hadm_id', 'hospital_expire_flag']].drop_duplicates()
     TRUM_df_firstfewday_mortalitycount = TRUM_df_firstfewday.hospital_expire_flag.value_counts()
-    print(f"After Hospital Length of Stay >= 48h Filter: %d"%(TRUM_df_los.hadm_id.nunique()))
-    print(f"\t Hospital Length of Stay  < 48h: %d = %d(Died) + %d(Discharged Alive)"%(TRUM_df_firstfewday.shape[0],TRUM_df_firstfewday_mortalitycount[1], TRUM_df_firstfewday_mortalitycount[0]))
-    if vent_threshold != None:
-      num_NotIntubated = trum_vent_day_count.date_count.isna().sum()
-      Intubated_less_thr = trum_vent_day_count[trum_vent_day_count.date_count<vent_threshold].shape[0]
-      print('MV day filter out:: \n\t%d(Not Intubated) + %d(Intubated < %d)'%(num_NotIntubated, Intubated_less_thr, vent_threshold))
-    print("Final Cohort Size:", trum_df.hadm_id.nunique())
+
+    print("After Hospital Length of Stay >= 48h Filter: %d" % TRUM_df_los.hadm_id.nunique())
+    print("\tHospital Length of Stay < 48h: %d = %d (Died) + %d (Discharged Alive)" % 
+          (TRUM_df_firstfewday.shape[0], TRUM_df_firstfewday_mortalitycount[1], TRUM_df_firstfewday_mortalitycount[0]))
+
+    if vent_threshold is not None:
+        num_not_intubated = trum_vent_day_count.date_count.isna().sum()
+        intubated_less_thr = trum_vent_day_count[trum_vent_day_count.date_count < vent_threshold].shape[0]
+        print('Mechanical Ventilation Day Filter: \n\t%d (Not Intubated) + %d (Intubated < %d days)' % 
+              (num_not_intubated, intubated_less_thr, vent_threshold))
+    print("Final Cohort Size: %d" % trum_df.hadm_id.nunique())
+  if is_saved:
+    print("Save to: ", project_path_obj.trauma_cohort_info_path)
+    trum_df.to_csv(project_path_obj.trauma_cohort_info_path)
 
   return trum_df
