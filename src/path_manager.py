@@ -8,18 +8,30 @@ class ProjectPaths:
         self.raw_data_path = os.path.join(self.data_path, 'raw')
         self.processed_data_path = os.path.join(self.data_path, 'processed')
         self.final_data_path = os.path.join(self.data_path, 'final')
-        # 
+        # code folder
         self.scripts_path = os.path.join(self.base_path, 'scripts')
         # self.notebooks_path = os.path.join(self.base_path, 'notebooks')
-
-        # Source code for use in this project.
         self.src_path = os.path.join(self.base_path, 'src')
-        # self.docs_path = os.path.join(self.base_path, 'docs')
         # self.tests_path = os.path.join(self.base_path, 'tests')
+        # documents folder
         self.supplementary_path = os.path.join(self.base_path, 'supplementary')
+        self.docs_path = os.path.join(self.base_path, 'docs')
 
-    def get_file_path(self, *path_segments):
-        return os.path.join(self.base_path, *path_segments)
+        # important files saved in "raw" folder
+
+        # important files saved in "processed" folder
+        self.trauma_cohort_info_path = os.path.join(self.processed_data_path, 'trauma_cohort_info.csv')
+        # self.trauma_blood_cx_path = os.path.join(self.processed_data_path, 'trauma_blood_cx.csv')
+        self.trauma_abxOrder_path = os.path.join(self.processed_data_path, 'trauma_abx_order.csv') # abx order 
+        self.trauma_abxEvent_path = os.path.join(self.processed_data_path, 'trauma_abx_event.csv') # abx event 
+        # self.trauma_sofa_path = os.path.join(self.processed_data_path, 'trauma_sofa.csv')
+        self.sepsis_label_path = os.path.join(self.processed_data_path, 'sepsis_label.csv') # sepsis onset info
+
+        
+
+
+    # def get_file_path(self, *path_segments):
+    #     return os.path.join(self.base_path, *path_segments)
 
     def get_raw_data_file(self, filename):
         return os.path.join(self.raw_data_path, filename)
