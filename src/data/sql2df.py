@@ -530,110 +530,197 @@ def ventilation_day_processed(project_id, vent_type=['MechVent'], saved_path=Non
     vent_day_count.to_csv(saved_path)
   return vent_day_count
 
+##########
+# Input Features:
+# vital_signs & FiO2
+#########
+
+def vital_signs_sql2df(project_id, saved_path=None):
+  """
+  A modified version of pivoted_vital.sql: (https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/pivot/pivoted_vital.sql)
+  * add hadm_id to the return table 
+
+  """
+  vs_query = """
+  -- This query pivots the vital signs a patient's stay (hadm_id)
+  -- Vital signs include heart rate, blood pressure, respiration rate, temperature, spo2 and glucose
+
+  with ce as
+  (
+    select ce.hadm_id, ce.icustay_id
+      , ce.charttime
+      , (case when itemid in (211,220045) and valuenum > 0 and valuenum < 300 then valuenum else null end) as heartrate
+      , (case when itemid in (51,442,455,6701,220179,220050) and valuenum > 0 and valuenum < 400 then valuenum else null end) as sysbp
+      , (case when itemid in (8368,8440,8441,8555,220180,220051) and valuenum > 0 and valuenum < 300 then valuenum else null end) as diasbp
+      , (case when itemid in (456,52,6702,443,220052,220181,225312) and valuenum > 0 and valuenum < 300 then valuenum else null end) as meanbp
+      , (case when itemid in (615,618,220210,224690) and valuenum > 0 and valuenum < 70 then valuenum else null end) as resprate
+      , (case when itemid in (223761,678) and valuenum > 70 and valuenum < 120 then (valuenum-32)/1.8 -- converted to degC in valuenum call
+                when itemid in (223762,676) and valuenum > 10 and valuenum < 50  then valuenum else null end) as tempc
+      , (case when itemid in (646,220277) and valuenum > 0 and valuenum <= 100 then valuenum else null end) as spo2
+      , (case when itemid in (807,811,1529,3745,3744,225664,220621,226537) and valuenum > 0 then valuenum else null end) as glucose
+    FROM `physionet-data.mimiciii_clinical.chartevents` ce
+    -- exclude rows marked as error
+    where (ce.error IS NULL OR ce.error != 1)
+    and ce.icustay_id IS NOT NULL
+    and ce.itemid in
+    (
+    -- HEART RATE
+    211, --"Heart Rate"
+    220045, --"Heart Rate"
+
+    -- Systolic/diastolic
+
+    51, --	Arterial BP [Systolic]
+    442, --	Manual BP [Systolic]
+    455, --	NBP [Systolic]
+    6701, --	Arterial BP #2 [Systolic]
+    220179, --	Non Invasive Blood Pressure systolic
+    220050, --	Arterial Blood Pressure systolic
+
+    8368, --	Arterial BP [Diastolic]
+    8440, --	Manual BP [Diastolic]
+    8441, --	NBP [Diastolic]
+    8555, --	Arterial BP #2 [Diastolic]
+    220180, --	Non Invasive Blood Pressure diastolic
+    220051, --	Arterial Blood Pressure diastolic
 
 
+    -- MEAN ARTERIAL PRESSURE
+    456, --"NBP Mean"
+    52, --"Arterial BP Mean"
+    6702, --	Arterial BP Mean #2
+    443, --	Manual BP Mean(calc)
+    220052, --"Arterial Blood Pressure mean"
+    220181, --"Non Invasive Blood Pressure mean"
+    225312, --"ART BP mean"
+
+    -- RESPIRATORY RATE
+    618,--	Respiratory Rate
+    615,--	Resp Rate (Total)
+    220210,--	Respiratory Rate
+    224690, --	Respiratory Rate (Total)
 
 
-# def vital_signs_sql2df(project_id, saved_path=None):
-#   vs_query = """
-#   -- This query pivots the vital signs for the first 24 hours of a patient's stay
-#   -- Vital signs include heart rate, blood pressure, respiration rate, and temperature
+    -- spo2, peripheral
+    646, 220277,
 
-#   with ce as
-#   (
-#     select ce.hadm_id, ce.icustay_id
-#       , ce.charttime
-#       , (case when itemid in (211,220045) and valuenum > 0 and valuenum < 300 then valuenum else null end) as heartrate
-#       , (case when itemid in (51,442,455,6701,220179,220050) and valuenum > 0 and valuenum < 400 then valuenum else null end) as sysbp
-#       , (case when itemid in (8368,8440,8441,8555,220180,220051) and valuenum > 0 and valuenum < 300 then valuenum else null end) as diasbp
-#       , (case when itemid in (456,52,6702,443,220052,220181,225312) and valuenum > 0 and valuenum < 300 then valuenum else null end) as meanbp
-#       , (case when itemid in (615,618,220210,224690) and valuenum > 0 and valuenum < 70 then valuenum else null end) as resprate
-#       , (case when itemid in (223761,678) and valuenum > 70 and valuenum < 120 then (valuenum-32)/1.8 -- converted to degC in valuenum call
-#                 when itemid in (223762,676) and valuenum > 10 and valuenum < 50  then valuenum else null end) as tempc
-#       , (case when itemid in (646,220277) and valuenum > 0 and valuenum <= 100 then valuenum else null end) as spo2
-#       , (case when itemid in (807,811,1529,3745,3744,225664,220621,226537) and valuenum > 0 then valuenum else null end) as glucose
-#     FROM `physionet-data.mimiciii_clinical.chartevents` ce
-#     -- exclude rows marked as error
-#     where (ce.error IS NULL OR ce.error != 1)
-#     and ce.icustay_id IS NOT NULL
-#     and ce.itemid in
-#     (
-#     -- HEART RATE
-#     211, --"Heart Rate"
-#     220045, --"Heart Rate"
+    -- glucose, both lab and fingerstick
+    807,--	Fingerstick glucose
+    811,--	glucose (70-105)
+    1529,--	glucose
+    3745,--	Bloodglucose
+    3744,--	Blood glucose
+    225664,--	glucose finger stick
+    220621,--	glucose (serum)
+    226537,--	glucose (whole blood)
 
-#     -- Systolic/diastolic
+    -- TEMPERATURE
+    223762, -- "Temperature Celsius"
+    676,	-- "Temperature C"
+    223761, -- "Temperature Fahrenheit"
+    678 --	"Temperature F"
 
-#     51, --	Arterial BP [Systolic]
-#     442, --	Manual BP [Systolic]
-#     455, --	NBP [Systolic]
-#     6701, --	Arterial BP #2 [Systolic]
-#     220179, --	Non Invasive Blood Pressure systolic
-#     220050, --	Arterial Blood Pressure systolic
-
-#     8368, --	Arterial BP [Diastolic]
-#     8440, --	Manual BP [Diastolic]
-#     8441, --	NBP [Diastolic]
-#     8555, --	Arterial BP #2 [Diastolic]
-#     220180, --	Non Invasive Blood Pressure diastolic
-#     220051, --	Arterial Blood Pressure diastolic
+    )
+  )
+  select 
+    ce.hadm_id,  ce.icustay_id
+    , ce.charttime
+    , avg(heartrate) as heartrate
+    , avg(sysbp) as sysbp
+    , avg(diasbp) as diasbp
+    , avg(meanbp) as meanbp
+    , avg(resprate) as resprate
+    , avg(tempc) as tempc
+    , avg(spo2) as spo2
+    , avg(glucose) as glucose
+  from ce
+  group by ce.hadm_id, ce.icustay_id, ce.charttime
+  order by ce.hadm_id, ce.icustay_id, ce.charttime
+  ;
+  """
+  vs_df = run_query(vs_query, project_id)
+  if saved_path != None:
+    vs_df.to_csv(os.path.join(saved_path, "pivot_vital.csv"))
+  return vs_df
 
 
-#     -- MEAN ARTERIAL PRESSURE
-#     456, --"NBP Mean"
-#     52, --"Arterial BP Mean"
-#     6702, --	Arterial BP Mean #2
-#     443, --	Manual BP Mean(calc)
-#     220052, --"Arterial Blood Pressure mean"
-#     220181, --"Non Invasive Blood Pressure mean"
-#     225312, --"ART BP mean"
+def fio2_sql2df(project_id, saved_path=None):
+  """
+  A modified version of pivoted_fio2.sql(https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/pivot/pivoted_fio2.sql)
+  * add hadm_id to the return table 
+  """
+  query = """
+  with pvt as
+  ( -- begin query that extracts the data
+    select le.hadm_id
+    , le.charttime
+    -- here we assign labels to ITEMIDs
+    -- this also fuses together multiple ITEMIDs containing the same data
+      -- add in some sanity checks on the values
+      , ROUND(MAX(case
+          when valuenum <= 0 then null
+          -- ensure FiO2 is a valid number between 21-100
+          -- mistakes are rare (<100 obs out of ~100,000)
+          -- there are 862 obs of valuenum == 20 - some people round down!
+          -- rather than risk imputing garbage data for FiO2, we simply NULL invalid values
+          when itemid = 50816 and valuenum < 20 then null
+          when itemid = 50816 and valuenum > 100 then null
+      ELSE valuenum END), 2) AS valuenum
+      FROM `physionet-data.mimiciii_clinical.labevents` le
+      where le.ITEMID = 50816
+      GROUP BY le.hadm_id, le.charttime
+  )
+  , stg_fio2 as
+  (
+    select hadm_id, charttime
+      -- pre-process the FiO2s to ensure they are between 21-100%
+      , ROUND(MAX(
+          case
+            when itemid = 223835
+              then case
+                when valuenum > 0 and valuenum <= 1
+                  then valuenum * 100
+                -- improperly input data - looks like O2 flow in litres
+                when valuenum > 1 and valuenum < 21
+                  then null
+                when valuenum >= 21 and valuenum <= 100
+                  then valuenum
+                else null end -- unphysiological
+          when itemid in (3420, 3422)
+          -- all these values are well formatted
+              then valuenum
+          when itemid = 190 and valuenum > 0.20 and valuenum < 1
+          -- well formatted but not in %
+              then valuenum * 100
+        else null end
+      ), 2) as fio2_chartevents
+    FROM `physionet-data.mimiciii_clinical.chartevents`
+    where ITEMID in
+    (
+      3420 -- FiO2
+    , 190 -- FiO2 set
+    , 223835 -- Inspired O2 Fraction (FiO2)
+    , 3422 -- FiO2 [measured]
+    )
+    and valuenum > 0 and valuenum < 100
+    -- exclude rows marked as error
+    AND (error IS NULL OR error != 1)
+    group by hadm_id, charttime
+  )
+  select *
+  from
+  (
+    SELECT hadm_id, charttime, valuenum AS fio2
+    FROM pvt
+    UNION ALL
+    SELECT hadm_id, charttime, fio2_chartevents AS fio2
+    FROM stg_fio2
+  )
+  ORDER BY hadm_id, charttime;
+  """
+  fio2_df = run_query(query, project_id)
+  if saved_path is not None:
+    fio2_df.to_csv(saved_path)
+  return fio2_df
 
-#     -- RESPIRATORY RATE
-#     618,--	Respiratory Rate
-#     615,--	Resp Rate (Total)
-#     220210,--	Respiratory Rate
-#     224690, --	Respiratory Rate (Total)
-
-
-#     -- spo2, peripheral
-#     646, 220277,
-
-#     -- glucose, both lab and fingerstick
-#     807,--	Fingerstick glucose
-#     811,--	glucose (70-105)
-#     1529,--	glucose
-#     3745,--	Bloodglucose
-#     3744,--	Blood glucose
-#     225664,--	glucose finger stick
-#     220621,--	glucose (serum)
-#     226537,--	glucose (whole blood)
-
-#     -- TEMPERATURE
-#     223762, -- "Temperature Celsius"
-#     676,	-- "Temperature C"
-#     223761, -- "Temperature Fahrenheit"
-#     678 --	"Temperature F"
-
-#     )
-#   )
-#   select 
-#     ce.hadm_id,  ce.icustay_id
-#     , ce.charttime
-#     , avg(heartrate) as heartrate
-#     , avg(sysbp) as sysbp
-#     , avg(diasbp) as diasbp
-#     , avg(meanbp) as meanbp
-#     , avg(resprate) as resprate
-#     , avg(tempc) as tempc
-#     , avg(spo2) as spo2
-#     , avg(glucose) as glucose
-#   from ce
-#   group by ce.hadm_id, ce.icustay_id, ce.charttime
-#   order by ce.hadm_id, ce.icustay_id, ce.charttime
-#   ;
-#   """
-#   vs_df = run_query(vs_query, project_id)
-#   if saved_path != None:
-#     vs_df.to_csv(os.path.join(saved_path, "pivot_vital.csv"))
-#   return vs_df
 
