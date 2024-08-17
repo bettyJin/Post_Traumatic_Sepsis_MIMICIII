@@ -7,7 +7,6 @@ class ProjectPaths:
         self.data_path = os.path.join(self.base_path, 'data')
         self.raw_data_path = os.path.join(self.data_path, 'raw')
         self.processed_data_path = os.path.join(self.data_path, 'processed')
-        self.final_data_path = os.path.join(self.data_path, 'final')
         # code folder
         self.scripts_path = os.path.join(self.base_path, 'scripts')
         # self.notebooks_path = os.path.join(self.base_path, 'notebooks')
@@ -16,6 +15,15 @@ class ProjectPaths:
         # documents folder
         self.supplementary_path = os.path.join(self.base_path, 'supplementary')
         self.docs_path = os.path.join(self.base_path, 'docs')
+
+        # dataset folder: with train and test split
+        self.final_dataset_path = os.path.join(self.base_path, 'dataset')
+        # dataset with nan value
+        self.dataset_with_nan_path = os.path.join(self.final_dataset_path, 'PostTraumaticSepsis_dataset_w_nan.pkl')
+        # dataset w/o nan value
+        self.dataset_wo_nan_path = os.path.join(self.final_dataset_path, 'PostTraumaticSepsis_dataset_wo_nan.pkl')
+
+
 
         # important files saved in "raw" folder
 
