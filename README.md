@@ -78,17 +78,6 @@ This pipeline focuses on the Post-Traumatic Sepsis dataset **without missing val
 
 The pipeline evaluates the effectiveness and limitations of these methods in managing class imbalance, where positive instances constitute about 4% of the dataset. For more detailed explanations, refer to `notebooks/ML_Pipeline_No_Missing.ipynb`.
 
-#### Performance Comparison of Different Methods (Average of 5-Fold Cross-Validation)
-| Method                    | Precision | Recall   | F1_score | AUC (PR) | Specificity | TN    | FP    | FN    | TP    |
-|---------------------------|-----------|----------|----------|----------|-------------|-------|-------|-------|-------|
-| Simple Classification      | 0.0       | 0.0      | 0.0      | 0.569237 | 1.0         | 1660.6| 0.0   | 73.4  | 0.0   |
-| Reweighting                | 0.048253  | 0.458521 | 0.086815 | 0.556912 | 0.596183    | 986.2 | 674.4 | 39.8  | 33.6  |
-| Augmentation: TimeWarp     | 0.0       | 0.0      | 0.0      | 0.555446 | 1.0         | 1660.6| 0.0   | 73.4  | 0.0   |
-| Undersampling + Oversampling | 0.050142 | 0.441644 | 0.089228 | 0.541260 | 0.618681    | 1020.8| 639.8 | 41.0  | 32.4  |
-| SMOTE                      | 0.041939  | 0.346630 | 0.074615 | 0.516961 | 0.649277    | 1076.0| 584.6 | 48.0  | 25.4  |
-| SMOTE + TimeWarp           | 0.044556  | 0.444968 | 0.080578 | 0.522805 | 0.577693    | 953.2 | 707.4 | 40.8  | 32.6  |
-
-
 
 #### 2. **Masked Autoencoder for Datasets with Missing Values**
 
@@ -100,16 +89,6 @@ This pipeline addresses the challenges posed by **missing data** and class imbal
 
 This pipeline effectively handles missing values and the significant class imbalance, where positive samples represent approximately 4% of the dataset. Detailed explanations can be found in `notebooks/ML_Pipeline_with_Missing.ipynb`.
 
-#### Cross-Validation Metrics Summary
-
-| Fold | Num Train Samples | Num Train Patients | Num Val Samples | Num Val Patients | Precision | Recall  | F1 Score | AUC (PR) | Specificity | TN  | FP  | FN  | TP  | Reconstruct Error |
-|------|-------------------|--------------------|-----------------|------------------|-----------|---------|----------|-----------|-------------|------|------|------|------|------------------|
-| 1    | 14,158             | 1,085              | 1,923           | 272              | 0.047252  | 0.620253 | 0.087814 | 0.561499  | 0.464208    | 856  | 988  | 30   | 49   | 6.369861          |
-| 2    | 14,178             | 1,085              | 1,913           | 272              | 0.043912  | 0.556962 | 0.081406 | 0.516813  | 0.477644    | 876  | 958  | 35   | 44   | 6.655287          |
-| 3    | 14,206             | 1,086              | 1,898           | 271              | 0.043197  | 0.512821 | 0.079681 | 0.538955  | 0.513187    | 934  | 886  | 38   | 40   | 6.600450          |
-| 4    | 14,446             | 1,086              | 1,779           | 271              | 0.047091  | 0.645570 | 0.087780 | 0.556750  | 0.392941    | 668  | 1,032 | 28   | 51   | 6.436116          |
-| 5    | 14,396             | 1,086              | 1,803           | 271              | 0.047410  | 0.692308 | 0.088743 | 0.580654  | 0.371014    | 640  | 1,085 | 24   | 54   | 6.519011          |
-| **Average** | **14,276.8**     | **1,085.6**          | **1,863.2**         | **271.4**        | **0.045772** | **0.605583** | **0.085085** | **0.550934** | **0.443799**  | **794.8** | **989.8** | **31.0** | **47.6** | **6.516145**        |
 
 ---
 
